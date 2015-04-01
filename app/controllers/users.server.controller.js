@@ -29,7 +29,6 @@ exports.create = function(req, res, next) {
  */
 exports.list = function(req, res, next) {
     User.find({}, 'username email', {
-        skip: 10,
         limit: 10
     }, function(err, users) {
         if (err) {
