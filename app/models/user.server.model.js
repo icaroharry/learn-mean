@@ -1,4 +1,5 @@
 var mongoose = require('mongoose'),
+    crypto = require('crypto'),
     Schema = mongoose.Schema;
 
 /** Schema itself */
@@ -7,41 +8,31 @@ var UserSchema = new Schema({
     lastName: String,
     email: {
         type: String,
-        index: true,
-        match: /.+\@.+\..+/
+        match: [/.+\@.+\..+/, "Please fill a valid e-mail address"]
     },
     username: {
         type: String,
-        trim: true,
         unique: true,
-        required: true
+        required: 'Username is required',
+        trim: true
     },
     password: {
         type: String,
         validate: [
             function(password) {
-                return password.length >= 6;
-            },
-            'Password should be longer'
+                return password && password.length > 6;
+            }, 'Password should be longer'
         ]
     },
-    website: {
-        type: String,
-        get: function(url) {
-            if (!url) {
-                return url;
-            } else {
-                if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
-                    url = 'http://' + url;
-                }
-                return url;
-            }
-        }   
+    salt: {
+        type: String
     },
-    role: {
+    provider: {
         type: String,
-        enum: ['Admin', 'Owner', 'User']
+        required: 'Provider is required'
     },
+    providerId: String,
+    providerData: {},
     created: {
         type: Date,
         default: Date.now
@@ -57,14 +48,40 @@ UserSchema.virtual('fullName').get(function() {
     this.lastName = splitName[1] || '';
 });
 
-/** Static method to the UserSchema */
-UserSchema.statics.findOneByUsername = function (username, callback) {
-    this.findOne({ username: new RegExp(username, 'i') }, callback);
+UserSchema.pre('save', function(next) {
+    if (this.password) {
+        this.salt = new Buffer(crypto.randomBytes(16).toString('base64'), 'base64');
+        this.password = this.hashPassword(this.password);
+    }
+    next();
+});
+
+/** Instance methods to the UserSchema */
+UserSchema.methods.hashPassword = function(password) {
+    return crypto.pbkdf2Sync(password, this.salt, 10000, 64).toString('base64');
 };
 
-/** Instance method to the UserSchema */
 UserSchema.methods.authenticate = function(password) {
-    return this.password === password;
+    return this.password === this.hashPassword(password);
+};
+
+/** Static method to the UserSchema */
+UserSchema.statics.findUniqueUsername = function(username, suffix, callback) {
+    var _this = this;
+    var possibleUsername = username + (suffix || '');
+    _this.findOne({
+        username: possibleUsername
+    }, function(err, user) {
+        if (!err) {
+            if (!user) {
+                callback(possibleUsername);
+            } else {
+                return _this.findUniqueUsername(username, (suffix || 0) + 1, callback);
+            }
+        } else {
+            callback(null);
+        }
+    });
 };
 
 /** 
