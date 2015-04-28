@@ -4,7 +4,7 @@ var User = require('mongoose').model('User');
 
 var getErrorMessage = function(err) {
     var message = '';
-    if (err.code) {
+    if(err.code) {
         switch (err.code) {
             case 11000:
             case 11001:
@@ -15,7 +15,7 @@ var getErrorMessage = function(err) {
         }
     } else {
         for (var errName in err.errors) {
-            if (err.errors[errName].message) {
+            if(err.errors[errName].message) {
                 message = err.errors[errName].message;
             }
         }
@@ -24,7 +24,7 @@ var getErrorMessage = function(err) {
 };
 
 exports.renderSignin = function(req, res, next) {
-    if (!req.user) {
+    if(!req.user) {
         res.render('signin', {
             title: 'Sign-in Form',
             messages: req.flash('error') || req.flash('info')
@@ -35,7 +35,7 @@ exports.renderSignin = function(req, res, next) {
 };
 
 exports.renderSignup = function(req, res, next) {
-    if (!req.user) {
+    if(!req.user) {
         res.render('signup', {
             title: 'Sign-up Form',
             messages: req.flash('error')
@@ -46,18 +46,18 @@ exports.renderSignup = function(req, res, next) {
 };
 
 exports.signup = function(req, res, next) {
-    if (!req.user) {
+    if(!req.user) {
         var user = new User(req.body);
         var message = null;
         user.provider = 'local';
         user.save(function(err) {
-            if (err) {
+            if(err) {
                 var message = getErrorMessage(err);
                 req.flash('error', message);
                 return res.redirect('/signup');
             }
             req.login(user, function(err) {
-                if (err) return next(err);
+                if(err) return next(err);
                 return res.redirect('/');
             });
         });
@@ -87,7 +87,7 @@ exports.saveOAuthUserProfile = function(req, profile, done) {
                         profile.username = availableUsername;
                         user = new User(profile);
                         user.save(function(err) {
-                            if (err) {
+                            if(err) {
                                 var message = getErrorMessage(err);
                                 req.flash('error', message);
                             }
@@ -113,7 +113,7 @@ exports.create = function(req, res, next) {
     var user = new User(req.body);
     
     user.save(function(err) {
-        if (err) {
+        if(err) {
             return next(err);
         } else {
             res.json(user);
@@ -132,7 +132,7 @@ exports.list = function(req, res, next) {
     User.find({}, 'username email', {
         limit: 10
     }, function(err, users) {
-        if (err) {
+        if(err) {
             return next(err);
         } else {
             res.json(users);
@@ -162,7 +162,7 @@ exports.userByID = function(req, res, next, id) {
     User.findOne({
         _id: id
     }, function(err, user) {
-        if (err) {
+        if(err) {
             return next(err);
         } else {
             req.user = user;
@@ -180,7 +180,7 @@ exports.userByID = function(req, res, next, id) {
  */
 exports.update = function(req, res, next) {
     User.findByIdAndUpdate(req.user.id, req.body, function(err, user) {
-        if (err) {
+        if(err) {
             return next(err);
         } else {
             res.json(user);
@@ -197,7 +197,7 @@ exports.update = function(req, res, next) {
  */
 exports.delete = function(req, res, next) {
     req.user.remove(function(err) {
-        if (err) {
+        if(err) {
             return next(err);
         } else {
             res.json(req.user);
